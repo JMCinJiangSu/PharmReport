@@ -30,7 +30,7 @@ from libs.getProdName_alias import alias_name
 from bin import getImage
 import customize_filters
 from libs import processMRD
-#import io
+from bin import getRelatedVar
 
 ### 防止药企环境的报错，先把不用的模块注释掉-2023.11.17 ###
 
@@ -66,7 +66,9 @@ def get_data(json_name, outfile, config, report_template, outjson, image):
 	data["hrd"] = getHRD.getHRD(jsonDict, data["var"]["ec_type"]["BRCA1_level12"]+data["var"]["ec_type"]["BRCA2_level12"], config)
 	data["tme"], data["tme_score"] = getTME.getTME(jsonDict)
 	data["hd"] = customize_filters.xw1402_hd(jsonDict["hd"]) if jsonDict['sample_info']['product_name'] in ['XW1402', 'XW1405', 'XW1404'] else jsonDict['hd']
+	# 处理MRD数据
 	data["mrd"], data['mrd_last'] = processMRD.process_MRD(jsonDict)
+	data["mrd_related"] = getRelatedVar.get_related_var(json_name, outfile, config, report_name)
 	# 用于浙肿BRCA判定是否有检出CNV信号
 	data["judge_CNV"] = "T" if jsonDict["cnv"] else ""
 	# 参考文献

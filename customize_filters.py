@@ -276,7 +276,7 @@ def var_info(var):
 				result.append(var["gene_region"]+" "+var["hgvs_c"])
 			result.append(var["transcript_primary"])
 		elif var["bio_category"] == "Cnv":
-			if var['cnv_type'] == 'loss':
+			if var['cnv_type'] == 'loss' or var['cnv_type'] == 'Loss':
 				result.append("缺失")
 			else:
 				result.append("扩增")
@@ -1164,7 +1164,7 @@ jinja2.filters.FILTERS["sample_amount"] = sample_amount
 def gather_data(sample):
 	result = ""
 	if sample["prod_names"] in ["BRCA1/BRCA2（全血）", "HRR（全血）", "10基因（血液）", "61遗传基因", "Pan116（血液）", "林奇综合征",\
-							    "TC21（血液）", "GA18（血液）", "LC76（血液）", "CRC25（血液）", "BPTM（全血）", "Master Panel（血液）", "BRCA1/2（扩增子）"]:
+							    "TC21（血液）", "GA18（血液）", "LC76（血液）", "CRC25（血液）", "BPTM（全血）", "Master Panel（血液）", "BRCA1/2（扩增子）", "MRD（LC10）"]:
 		result = sample["blood_collection_date"]
 	else:
 		result = sample["gather_data"]
@@ -1900,6 +1900,7 @@ def filter_xw1402_rna(var_list):
 		for gene in set(re.split(',', var['gene_symbol'])):
 			detect_gene.append(gene)
 			if gene in rna_rule:
+				var['gene_symbol'] = gene
 				if gene == 'MET':
 					var['gene_symbol'] = 'MET'
 				result.append(var)
@@ -2017,3 +2018,111 @@ def ad3101_inter(info):
 	if sample['product_name'] == 'AD3101' and sample['prod_names'] == 'Master Panel（组织）':
 		return var["var_somatic"]["level_I"] + var["var_germline"]["level_5"] + var["var_somatic"]["level_II"] + var["var_somatic"]["level_onco_nodrug"] + var["var_germline"]["level_4"]
 jinja2.filters.FILTERS['ad3101_inter'] = ad3101_inter
+
+def approval_regimen_biomarker_v2(info):
+	biomaker_list = info[0]
+	judge_mergeMET = info[1]
+	result = []
+	for i in biomaker_list:
+		if "hgvs_c" in i.keys() and i["hgvs_c"]:
+			if i["hgvs_p"] != "p.?":
+				result.append("{0} {1} {2} {3}".format(i["gene_symbol"], i["gene_region"], i["hgvs_c"], i["hgvs_p"]))
+			else:
+				result.append("{0} {1} {2}".format(i["gene_symbol"], i["gene_region"], i["hgvs_c"]))
+		elif "cnv_type" in i.keys() and i["cnv_type"]:
+			# 2024.08.30-CNV 区分Loss，其他的写扩增
+			if i["cnv_type"] == "Loss" and i["gene_symbol"] in ["BRCA1", "BRCA2"]:
+				result.append("{0} 大片段缺失".format(i["gene_symbol"]))
+			elif i["cnv_type"] == "Gain" and i["gene_symbol"] in ["BRCA1", "BRCA2"]:
+				result.append("{0} 大片段重复".format(i["gene_symbol"]))
+			elif i["cnv_type"] == "HeteDel" and i["gene_symbol"] in ["BRCA1", "BRCA2"]:
+				result.append("{0} 杂合大片段缺失".format(i["gene_symbol"]))
+			elif i["cnv_type"] == "HomoDel" and i["gene_symbol"] in ["BRCA1", "BRCA2"]:
+				result.append("{0} 纯合大片段缺失".format(i["gene_symbol"]))
+			else:
+				result.append("{0} 扩增".format(i["gene_symbol"]))
+		elif "five_prime_gene" in i.keys() and i["five_prime_gene"]:
+			if i["five_prime_gene"] == "MET" and i["three_prime_gene"] == "MET":
+				result.append("MET exon14 跳跃")
+			else:
+				# 重新拆分hgvs，CP40的region少了ins
+				if "hgvs" in i.keys() and i["hgvs"]:
+					i["five_prime_region"] = "-".join(re.split("-", (re.split(":", i["hgvs"])[2]))[:-1]) \
+						  					 if not re.search("--", i["hgvs"]) \
+											 else re.split("_", (re.split("--", i["hgvs"])[0]))[-1]
+					i["three_prime_region"] = re.split(":", i["hgvs"])[-1] \
+											  if not re.search("--", i["hgvs"]) \
+											  else re.split("_", (re.split("--", i["hgvs"])[1]))[-1]
+					# 加一个兼容-2023.10.19
+					# var_hgvs新格式，gene1:NM_xxx:exon1--gene2:NM_xxx:exon2, 旧的为gene1:NM_xxx_exon1--gene2:NM_xxx_exon2
+					# cds会变成xxx:exon1和xxx:exon2
+					i["five_prime_region"] = re.split(":", i["five_prime_region"])[-1] if re.search(":", i["five_prime_region"]) else i["five_prime_region"]
+					i["three_prime_region"] = re.split(":", i["three_prime_region"])[-1] if re.search(":", i["three_prime_region"]) else i["three_prime_region"]
+					# 兼容完成-2023.10.19
+					# 加一个兼容-2024.01.25
+					# 4. gene:转录本_exon-gene:转录本_exon 重新提取后，five_prime_cds为空，以此做为重新拆分的判定依据
+					if not i["five_prime_region"]:
+						i["five_prime_region"] = re.split("_", re.split("-", i["hgvs"])[0])[-1]
+						i["three_prime_region"] = re.split("_", i["hgvs"])[-1]
+					# 兼容完成-2024.01.25
+				result.append("{0}:{1}:{2}-{3}:{4}:{5}".format(i["five_prime_gene"], i["five_prime_transcript"], i["five_prime_region"],\
+															   i["three_prime_gene"], i["three_prime_transcript"], i["three_prime_region"]))
+		elif "biomarker_type" in i.keys() and i["biomarker_type"]:
+			if i["biomarker_type"] == "KRAS/NRAS/BRAF WT":
+				result.append("KRAS/NRAS/BRAF 野生型")
+			elif i["biomarker_type"] == "HRD-":
+				result.append("HRD阴性")
+			elif i["biomarker_type"] == "HRD+":
+				result.append("HRD阳性")
+			else:
+				result.append(i["biomarker_type"])
+		else:
+			result.append("无法分辨的分子标志物！")
+	# 若存在MET 14跳跃DNA/RNA共检的话，则删除RNA里的结果，仅保留DNA
+	result_redup = []
+	for i in result:
+		if i not in result_redup:
+			result_redup.append(i)
+	# 2024.02.27更新-MET DNA/RNA共检时都要展示
+	#if judge_mergeMET:
+	#	if "MET exon14 跳跃" in result_redup:
+	#		result_redup.remove("MET exon14 跳跃")
+	# 2024.02.27更新完成
+	if not result_redup:
+		result_redup = ["-"]
+	rt = RichText()
+	rt.add("\n".join(result_redup))
+	return rt
+jinja2.filters.FILTERS["approval_regimen_biomarker_v2"] = approval_regimen_biomarker_v2
+
+def get_drug_mechanism_cn(drug_details):
+	result = []
+	for i in drug_details:
+		if i["drug_mechanism_cn"] and i["drug_mechanism_cn"] not in result and i["drug_name"] != "化疗;Chemotherapy":
+			result.append(i["drug_mechanism_cn"])
+	return result
+jinja2.filters.FILTERS["get_drug_mechanism_cn"] = get_drug_mechanism_cn
+
+def mrd_summary(var_list):
+	result = []
+	var_list = var_list["var_somatic"]["level_I"] + var_list["var_somatic"]["level_II"] + var_list["var_somatic"]["level_onco_nodrug"] + var_list["var_somatic"]["level_III"]
+	for var in var_list:
+		if var["bio_category"] == "Snvindel":
+			if var["hgvs_p"] != "p.?":
+				result.append(var["gene_symbol"]+" "+var["hgvs_p"] + " " + var["freq_str"])
+			else:
+				result.append(var["gene_symbol"]+" "+var["hgvs_c"] + " " + var["freq_str"])
+		elif var["bio_category"] == "Cnv":
+			result.append(var["gene_symbol"]+" 扩增" + " " + var["cn_mean"])
+		elif var["bio_category"] in ["Sv", "PSeqRnaSv"]:
+			if var["five_prime_gene"] == "MET" and var["three_prime_gene"] == "MET":
+				result.append("MET exon14 跳跃"+" "+var["freq_str"])
+			else:
+				if var["five_prime_gene"]+"-"+var["three_prime_gene"]+" 融合" not in result:
+					result.append(var["five_prime_gene"]+"-"+var["three_prime_gene"]+" 融合"+" "+var["freq_str"])
+	if result:
+		return ", ".join(result)
+	else:
+		return "本次未检测到相关驱动突变"
+jinja2.filters.FILTERS["mrd_summary"] = mrd_summary
+	
