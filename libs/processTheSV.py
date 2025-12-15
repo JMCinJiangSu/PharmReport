@@ -86,8 +86,11 @@ def process_sv(jsonDict, config):
 		var["clinic_num_s"] = functionNumStran(config).get(var["function_classification"], 3) if var["function_classification"] and var["function_classification"] != "-" else \
 							  functionNumStran(config).get(var["clinical_significance"], 3)
 		#AD3101 新增一个字段，只有致病性解读的返回致病性等级，其他情况按致癌性解读等级输出,2025年3月6日
-		var['clinic_ad3101_g'] = var['clinic_num_g'] if var["clinical_significance"] != "-" and var['function_classification'] == '-' else 3
-		var['clinic_ad3101_s'] = var['clinic_num_s'] if var['function_classification'] != '-' else 3
+		#var['clinic_ad3101_g'] = var['clinic_num_g'] if var["clinical_significance"] != "-" and var['function_classification'] == '-' else 3
+		#var['clinic_ad3101_s'] = var['clinic_num_s'] if var['function_classification'] != '-' else 3
+		# 更新ad3101 嵇梦晨 2025年6月18日，修改默认值
+		var['clinic_ad3101_g'] = var['clinic_num_g'] if var["clinical_significance"] != "-" and var['function_classification'] == '-' else 0
+		var['clinic_ad3101_s'] = var['clinic_num_s'] if var['function_classification'] != '-' else 0
 		# 2023.05.22 更新完成
 		var["evi_sum"] = varRegimen(jsonDict, var["evi_sum"], config, var)
 		var["clinic_num_s"], var["top_level"] = S_function(var)
@@ -109,7 +112,8 @@ def process_sv(jsonDict, config):
 	# 按频率排序下
 	# Myeloid类似CP 2023年12月27日 jmc
 	# xw1402 OncoPro(组织)流程同handle jmc 2024年8月16日
-	if not re.search("Classic|CRC12|Myeloid|OncoPro（组织）", jsonDict["sample_info"]["prod_names"]):
+	# XW4303 BG
+	if not re.search("Classic|CRC12|Myeloid|OncoPro（组织）|BG", jsonDict["sample_info"]["prod_names"]):
 #		print (sv_combination_match)
 		sv_combination_match = sorted(sv_combination_match, key=lambda i:float(str(i["freq"]).replace("%","")), reverse=True)
 	else:

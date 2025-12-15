@@ -27,8 +27,11 @@ def process_cnv(jsonDict, config):
 							  functionNumStran(config).get(var["clinical_significance"], 3)
 		
 		#AD3101 新增一个字段，只有致病性解读的返回致病性等级，其他情况按致癌性解读等级输出,2025年3月6日
-		var['clinic_ad3101_g'] = var['clinic_num_g'] if var["clinical_significance"] != "-" and var['function_classification'] == '-' else 3
-		var['clinic_ad3101_s'] = var['clinic_num_s'] if var['function_classification'] != '-' else 3
+		#var['clinic_ad3101_g'] = var['clinic_num_g'] if var["clinical_significance"] != "-" and var['function_classification'] == '-' else 3
+		#var['clinic_ad3101_s'] = var['clinic_num_s'] if var['function_classification'] != '-' else 3
+		# 更新ad3101 嵇梦晨 2025年6月18日，修改默认值
+		var['clinic_ad3101_g'] = var['clinic_num_g'] if var["clinical_significance"] != "-" and var['function_classification'] == '-' else 0
+		var['clinic_ad3101_s'] = var['clinic_num_s'] if var['function_classification'] != '-' else 0
 
 		var["evi_sum"] = varRegimen(jsonDict, var["evi_sum"], config, var)
 		var["clinic_num_s"], var["top_level"] = S_function(var)

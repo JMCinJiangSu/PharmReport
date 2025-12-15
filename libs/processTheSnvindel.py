@@ -39,8 +39,11 @@ def process_snvindel(jsonDict, config):
 			var["clinic_num_g"] = 3
 			var["clinic_num_s"] = 3
 		# AD3101 新增一个字段，只有致病性解读的返回致病性等级，其他情况按致癌性解读等级输出,2025年3月6日
-		var['clinic_ad3101_g'] = var['clinic_num_g'] if var["clinical_significance"] != "-" and var['function_classification'] == '-' else 3
-		var['clinic_ad3101_s'] = var['clinic_num_s'] if var['function_classification'] != '-' else 3
+		#var['clinic_ad3101_g'] = var['clinic_num_g'] if var["clinical_significance"] != "-" and var['function_classification'] == '-' else 3
+		#var['clinic_ad3101_s'] = var['clinic_num_s'] if var['function_classification'] != '-' else 3
+		# 更新ad3101 嵇梦晨 2025年6月18日，修改默认值
+		var['clinic_ad3101_g'] = var['clinic_num_g'] if var["clinical_significance"] != "-" and var['function_classification'] == '-' else 0
+		var['clinic_ad3101_s'] = var['clinic_num_s'] if var['function_classification'] != '-' else 0
 
 		# freq 兼容百分数格式，均转化为小数格式-适配v4-刘炜芬，2023.11.09
 		# freq 兼容字符串格式，均转化为小数格式-嵇梦晨，2024.03.20
@@ -112,6 +115,11 @@ def process_snvindel(jsonDict, config):
 			var['EGFR_tag'] = 'Ex19 del' if 'EGFR Exon19 del' in var['var_category_names'] else 'Ex20 ins' if 'EGFR Exon20 ins' in var['var_category_names'] else var['hgvs_p_ZJZL'].replace('p.', '') if var['hgvs_p_ZJZL'] != 'p.?' else var['hgvs_p_ZJZL']
 		#var['EGFR_tag'] = 'Ex19 del' if 'EGFR Exon19 del' in var['var_category_names'] else 'Ex20 ins' if 'EGFR Exon20 ins' in var['var_category_names'] \
 		#	else var['hgvs_p_ZJZL'].replace('p.', '') if var['hgvs_p_ZJZL'] != 'p.?' else var['hgvs_p_ZJZL']
+		# 10. XW5101 判断NPM1变异分型
+		if jsonDict["sample_info"]["product_name"] == "XW5101":
+			if var["gene_symbol"] == "NPM1" and re.search("863", var["hgvs_c"]):
+				var["NPM1_type"] = "Type A" if var["alt"] == "TCTG" else "Type B" if var["alt"] == "CATG" else "Type D" if var["alt"] == "CCTG" else ''
+
 	#print  ("######### 3.0.2 step2", datetime.datetime.now())
 	# 按频率排序下
 	snvindel = sorted(snvindel, key=lambda i:i["freq"], reverse=True)

@@ -285,8 +285,8 @@ def judge_GA_tumor_KNB(var_data, tumor_list):
 
 def sv_shfk(var_data):
 	'''
-	上海肺科CP40：检测到融合时，其他说明中要写“本次检测到gene1-gene2融合。具体的融合型为gene1:exon-gene2:exon”
-	2022.07.27 新增，MET 14 skipping也要展示。DNA和RNA均检测到，则展示DNA结果解读+“本次实验在RNA水平也检测到MET exon14 skipping。”；只有RNA检测到时则放RNA解读，仅DNA检测到暂时无法判定，不放解读。
+	上海肺科CP40：检测到融合时，其他说明中要写"本次检测到gene1-gene2融合。具体的融合型为gene1:exon-gene2:exon"
+	2022.07.27 新增，MET 14 skipping也要展示。DNA和RNA均检测到，则展示DNA结果解读+"本次实验在RNA水平也检测到MET exon14 skipping。"；只有RNA检测到时则放RNA解读，仅DNA检测到暂时无法判定，不放解读。
 	'''
 	sv_var = [var for var in var_data if var["bio_category"] == "Sv" and not (var["five_prime_gene"] == "MET" and var["three_prime_gene"] == "MET")]
 	RNA_met = [var for var in var_data if var["bio_category"] == "Sv" and var["five_prime_gene"] == "MET" and var["three_prime_gene"] == "MET"]
@@ -534,8 +534,8 @@ def varInfo_FDZS(gene_symbol, gene_region, variant_desc_cn, config):
 	2）遗传疾病使用配置表
 	3）遗传疾病描述信息使用配置表
 	4）风险使用配置表
-	5）gene_region转化为中文，如“exon1”转化为1号外显子
-	6）变异描述，截取部分信息，仅展示“导致基因编码蛋白第1056位氨基酸由谷氨酰胺突变为终止密码子”
+	5）gene_region转化为中文，如"exon1"转化为1号外显子
+	6）变异描述，截取部分信息，仅展示"导致基因编码蛋白第1056位氨基酸由谷氨酰胺突变为终止密码子"
 	'''
 	# 1. 获取配置表信息
 	#FDZS_gene_dict = get_FDZS_database(config)
@@ -613,7 +613,7 @@ def var_summary_CQFY(var_brca):
 	# L54 提取检出的45，字符串（去重后拼接）
 	result["B1_L54"] = "、".join(sorted(set([level_dict[i] for i in brca1_level_list if i in ["4","5"]]), reverse=True))
 	result["B2_L54"] = "、".join(sorted(set([level_dict[i] for i in brca2_level_list if i in ["4","5"]]), reverse=True))
-	# L543提取345，列表（去重），用于判断描述中用“有”还是“为”，仅1个用“为”，多个用“有”
+	# L543提取345，列表（去重），用于判断描述中用"有"还是"为"，仅1个用"为"，多个用"有"
 	result["B1_L543"] = list(set([level_dict[i] for i in brca1_level_list if i in ["3","4","5"]]))
 	result["B2_L543"] = list(set([level_dict[i] for i in brca2_level_list if i in ["3","4","5"]]))
 
@@ -1139,57 +1139,114 @@ def sort_for_xw0417(var_list):
 
 	return result
 
-def getSum_for_tXW6002(var_list):
-	t_XW6002_HRR_genelist = ["ABRAXAS1", "AKT1", "AKT2", "AR", "ATM", "ATR", "ATRX", "AURKA", "BARD1", "BRAF", "BRCA1", "BRCA2", "BRIP1", "CD274", "CHEK1", "CHEK2", "EGFR", "ERBB2",
-    "ERCC1", "FANCA", "FANCC", "FANCD2", "FANCL", "FGFR1", "GEN1", "GSTP1", "IFNGR1", "KRAS", "MRE11", "MSH6", "MYB", "NBN", "PALB2", "POLD1", "POLE", "PRKACA", "RAD50", "RAD51B",
-	"RAD51C", "RAD51D", "RAD54L", "RBM10", "TP53", "TSC1", "TSC2", "VEGFA"]
-	hrr_gene = []
-	other_gene = []
-	for var in var_list:
-		for gene in set(re.split(",", var["gene_symbol"])):
-			if gene in t_XW6002_HRR_genelist:
-				hrr_gene.append(gene)
+def judgeLBD(var_list):
+	conclusion = []
+	var_list = [var for var in var_list if var['gene_symbol'] == 'AR']
+	if not var_list:
+		return ''
+	cnv = [var for var in var_list if var['bio_category'] == 'Cnv']
+	#snv = [var for var in var_list if var['bio_category'] == 'Snvindel' and var['type'] == 'nonSynonymous_Substitution']
+	snv = [var for var in var_list if var['bio_category'] == 'Snvindel']
+	if cnv:
+		for var in cnv:
+			if var['cnv_type'] == 'Loss':
+				conclusion.append('AR Loss')
 			else:
-				other_gene.append(gene)
-	hrr_gene = sorted(set(hrr_gene))
-	other_gene = sorted(set(other_gene))
-	result = {}
-	if hrr_gene and "AR" in hrr_gene:
-		result['AR'] = 'AR'
-		hrr_gene.remove('AR')
-		result['HRR'] = '、'.join(hrr_gene) if hrr_gene else ''
-		result['other'] = '、'.join(other_gene) if other_gene else ''
-	else:
-		result['AR'] = ''
-		result['HRR'] = '、'.join(hrr_gene) if hrr_gene else ''
-		result['other'] = '、'.join(other_gene) if other_gene else ''
-	return result
+				conclusion.append('AR Amp')
+	if snv:
+		lbd_present = False
+		non_lbd_present = False
+		for var in snv:
+			# 646-919 之间的错义突变为LBD ，其他变异为非LBD突变，p.(V666M)
+			num = re.findall(r'\d+', var['hgvs_p']) if var['hgvs_p'] != 'p.?' else []
+			if not num:
+				non_lbd_present = True
+			elif 646 <= int(num[0]) <= 919 and var['type'] == 'nonSynonymous_Substitution':
+				lbd_present = True
+			else:
+				non_lbd_present = True
+		if lbd_present:
+			conclusion.append('AR（LBD突变）')
+		elif non_lbd_present:
+			conclusion.append('AR（非LBD突变）')
+	seen = set()
+	unique_conclusion = []
+	for item in conclusion:
+		if item not in seen:
+			seen.add(item)
+			unique_conclusion.append(item)
+	
+	return '、'.join(unique_conclusion) if unique_conclusion else ''
 
-def getSum_for_gXW6002(var_list):
-	g_XW6002_HRR_genelist = ["ABRAXAS1", "AKT1", "AKT2", "AR", "ATM", "ATR", "AURKA", "BARD1", "BRAF", "BRCA1", "BRCA2", "BRIP1", "CD274", "CHEK1", "CHEK2", "EGFR", "ERBB2", "ERCC1",
-    "ERCC3", "ERCC4", "FANCA", "FANCD2", "FANCL", "FANCM", "FGFR1", "GEN1", "KRAS", "MAPK1", "MRE11", "MSH6", "NBN", "NPM1", "PALB2", "POLD1", "POLE", "RAD50","RAD51", "RAD51B",
-	"RAD51C", "RAD51D", "RAD52", "RAD54L", "SETD2", "SLX4", "TP53", "TSC1", "TSC2", "XRCC1", "XRCC2"]
-	hrr_gene = []
-	other_gene = []
-	for var in var_list:
-		for gene in set(re.split(",", var["gene_symbol"])):
-			if gene in g_XW6002_HRR_genelist:
-				hrr_gene.append(gene)
-			else:
-				other_gene.append(gene)
-	hrr_gene = sorted(set(hrr_gene))
-	other_gene = sorted(set(other_gene))
-	result = {}
-	if hrr_gene and "AR" in hrr_gene:
-		result['AR'] = 'AR'
-		hrr_gene.remove('AR')
-		result['HRR'] = '、'.join(hrr_gene) if hrr_gene else ''
-		result['other'] = '、'.join(other_gene) if other_gene else ''
-	else:
-		result['AR'] = ''
-		result['HRR'] = '、'.join(hrr_gene) if hrr_gene else ''
-		result['other'] = '、'.join(other_gene) if other_gene else ''
-	return result
+def _process_hrr_genes(var_list: list, hrr_genelist: list) -> dict:
+    """
+    Helper function to process HRR genes from variant list.
+    
+    Args:
+        var_list: List of variant dictionaries
+        hrr_genelist: List of HRR genes to check against
+        
+    Returns:
+        Dictionary containing processed gene lists
+    """
+    hrr_genes = set()
+    other_genes = set()
+    
+    for var in var_list:
+        genes = set(re.split(",", var["gene_symbol"]))
+        hrr_genes.update(genes & set(hrr_genelist))
+        other_genes.update(genes - set(hrr_genelist))
+    ar_lbd = judgeLBD(var_list) if 'AR' in hrr_genes else ''
+
+    result = {
+        'AR': ar_lbd,
+        'HRR': '、'.join(sorted(hrr_genes - {'AR'})) if hrr_genes - {'AR'} else '',
+        'other': '、'.join(sorted(other_genes)) if other_genes else ''
+    }
+    
+    return result
+
+def getSum_for_tXW6002(var_list: list) -> dict:
+    """
+    Process tissue XW6002 HRR genes.
+    
+    Args:
+        var_list: List of variant dictionaries
+        
+    Returns:
+        Dictionary containing AR, HRR and other gene information
+    """
+    t_XW6002_HRR_genelist = [
+        "ABRAXAS1", "AKT1", "AKT2", "AR", "ATM", "ATR", "ATRX", "AURKA", 
+        "BARD1", "BRAF", "BRCA1", "BRCA2", "BRIP1", "CD274", "CHEK1", 
+        "CHEK2", "EGFR", "ERBB2", "ERCC1", "FANCA", "FANCC", "FANCD2", 
+        "FANCL", "FGFR1", "GEN1", "GSTP1", "IFNGR1", "KRAS", "MRE11", 
+        "MSH6", "MYB", "NBN", "PALB2", "POLD1", "POLE", "PRKACA", "RAD50", 
+        "RAD51B", "RAD51C", "RAD51D", "RAD54L", "RBM10", "TP53", "TSC1", 
+        "TSC2", "VEGFA"
+    ]
+    return _process_hrr_genes(var_list, t_XW6002_HRR_genelist)
+
+def getSum_for_gXW6002(var_list: list) -> dict:
+    """
+    Process germline XW6002 HRR genes.
+    
+    Args:
+        var_list: List of variant dictionaries
+        
+    Returns:
+        Dictionary containing AR, HRR and other gene information
+    """
+    g_XW6002_HRR_genelist = [
+        "ABRAXAS1", "AKT1", "AKT2", "AR", "ATM", "ATR", "AURKA", "BARD1", 
+        "BRAF", "BRCA1", "BRCA2", "BRIP1", "CD274", "CHEK1", "CHEK2", 
+        "EGFR", "ERBB2", "ERCC1", "ERCC3", "ERCC4", "FANCA", "FANCD2", 
+        "FANCL", "FANCM", "FGFR1", "GEN1", "KRAS", "MAPK1", "MRE11", 
+        "MSH6", "NBN", "NPM1", "PALB2", "POLD1", "POLE", "RAD50", "RAD51", 
+        "RAD51B", "RAD51C", "RAD51D", "RAD52", "RAD54L", "SETD2", "SLX4", 
+        "TP53", "TSC1", "TSC2", "XRCC1", "XRCC2"
+    ]
+    return _process_hrr_genes(var_list, g_XW6002_HRR_genelist)
 
 def getSum_for_XW5902(var_list, hd):
 	result = ''
@@ -1241,9 +1298,9 @@ def XW6701_summary(var_list, main_gene, hrr_genelist):
 	'''
 	用于XW6701检测结果总结
 	'''
-	result = {'BRCA': [], 'hrr': [], 'other': []}
-	allowed_bio = ['Snvindel', 'Cnv', 'Sv', 'PSeqRnaSv']
-	seen = {'BRCA': set(), 'hrr': set(), 'other': set()}  # 跟踪已添加条目，避免重复
+	result = {'BRCA': [], 'CP': [],'hrr': [], 'other': []}
+	allowed_bio = ['Snvindel', 'Cnv', 'Sv', 'PSeqRnaSv', 'PHd']
+	seen = {'BRCA': set(), 'hrr': set(), 'other': set(), 'CP': set()}  # 跟踪已添加条目，避免重复
 	clin_map = {'Pathogenic': '致病性变异', 'Likely pathogenic': '疑似致病性变异'}
 	func_map = {'Oncogenic': '致癌性变异', 'Likely oncogenic': '疑似致癌性变异'}
 	sort_order = {
@@ -1261,6 +1318,8 @@ def XW6701_summary(var_list, main_gene, hrr_genelist):
 			return item['cnv_type']
 		elif bio_category in ['Sv', 'PSeqRnaSv']:
 			return f"{item['five_prime_gene']}-{item['three_prime_gene']}"
+		elif bio_category == 'PHd':
+			return "HD"
 		else:
 			return ''
 
@@ -1274,9 +1333,11 @@ def XW6701_summary(var_list, main_gene, hrr_genelist):
 			continue
 
 		processed = False
-		for category, genes in [('BRCA', main_gene), ('hrr', hrr_genelist)]:
-			if gene_symbol in genes and clin_sig in clin_map:
-				inter = clin_map[clin_sig]
+		for category, genes in [('BRCA', main_gene), ('hrr', hrr_genelist), ('CP', ['CDK12', 'PALB2'])]:
+			# 7601 hrr新增了PIK3CA，解读只返回了体系
+			if gene_symbol in genes and (clin_sig in clin_map or func_class in func_map):
+			    # if gene_symbol in genes and clin_sig in clin_map:
+				inter = clin_map[clin_sig] if clin_sig != '-' else func_map[func_class]
 				var_info = get_var_info(item)
 				entry_key = (gene_symbol, inter, var_info)
 
@@ -1313,9 +1374,10 @@ def XW6701_summary(var_list, main_gene, hrr_genelist):
 		
 	return result
 
-def getSum_for_tXW6701(var_list):
-	var = var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug']
-	main_gene = ['BRCA1', 'BRCA2', 'CDK12', 'PALB2']
+def getSum_for_tXW6701(var_list, hd, tumor_list):
+	var = var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug'] + hd if \
+		"前列腺癌" in tumor_list else var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug']
+	main_gene = ['BRCA1', 'BRCA2']
 	hrr_genelist = [
     "ARID1A", "ARID1B", "ARID2", "ATM", "ATR", "BAP1", "BARD1","BRIP1", "CCND1", "CCNE1", "CDK4",
 	"CHEK1", "CHEK2", "ERCC1", "ERCC2", "FANCA", "FANCC", "FANCD2","FANCL", "GEN1", "HDAC2", "MDM2", "MDM4", "MLH1", "MLH3",
@@ -1325,14 +1387,25 @@ def getSum_for_tXW6701(var_list):
 
 	return result
 
-def getSum_for_gXW6701(var_list):
-	var = var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug']
-	main_gene = ['BRCA1', 'BRCA2', 'CDK12', 'PALB2']
+def getSum_for_gXW6701(var_list, hd, tumor_list):
+	var = var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug'] + hd if \
+		"前列腺癌" in tumor_list else var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug']
+	main_gene = ['BRCA1', 'BRCA2']
 	hrr_genelist = [
     "ARID1A", "ATM", "ATR", "BAP1", "BARD1", "BRIP1", "CCND1", "CCND2", "CCNE1", "CDK4", "CDKN2A",
     "CHEK1", "CHEK2", "ERCC1", "ERCC2", "ERCC3", "ERCC4", "FANCA", "FANCD2", "FANCL", "FANCM", "GEN1", "HDAC2", "MDM2", "MDM4",
     "MLH1", "MSH2", "MSH6", "MTOR", "MUTYH", "NBN", "NPM1", "PMS2", "POLD1", "POLE", "RAD50", "RAD51", "RAD51B",
     "RAD51C", "RAD51D", "RAD52", "RAD54L", "SLX4", "SMARCA4", "TERT", "TP53", "XRCC1", "XRCC2"]
+	result = XW6701_summary(var, main_gene, hrr_genelist)
+
+	return result
+
+def getSum_for_XW6701(var_list, hd, tumor_list):
+	var = var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug'] + hd if \
+		"前列腺癌" in tumor_list else var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug']
+	main_gene = ['BRCA1', 'BRCA2']
+	hrr_genelist = ['ATM', 'BARD1', 'BRIP1', 'CHEK1', 'CHEK2', 'FANCA', 'FANCL', 'HDAC2',
+				  'PPP2R2A', 'RAD51B', 'RAD51C', 'RAD51D', 'RAD54L']
 	result = XW6701_summary(var, main_gene, hrr_genelist)
 
 	return result
@@ -1360,3 +1433,100 @@ def getSum_for_XW6003(var_list, hd):
 		'CDKN2B': '/'.join(sorted(result['CDKN2B'])),
 		'other': '、'.join(sorted(result['other']))
 	}
+
+# 临沂肿瘤医院116
+def PAN116_LYZL_summary(level_I, level_II, level_onco_nodrug, level_5, level_4):
+	'''
+	临沂肿瘤医院-SF2
+	首页展示A/B类证据相关变异
+	EGFR基因19号外显子p.(L858R)突变 MET基因扩增 EML4-ALK基因融合
+	检出XXX基因XX外显子p.(XXXXX)突变,为致病性变异;
+	检出XXX基因XX外显子p.(XXXXX)突变,为疑似致病性变异。
+	非配对样本，把配对样本检测的胚系基因筛选出来
+	'''
+	result = {
+		"level_I_sum" : "",
+		"nc_germline_sum" : "",
+		"germline_sum" : ""
+	}
+	# 检测胚系变异的40基因
+	gene_list = [
+    "VHL", "TSC2", "TSC1", "TP53", "TERT", "STK11", "SMARCA4", "SMAD4", "RET",
+    "RB1", "PTEN", "PTCH1", "POLE", "POLD1", "PMS2", "PDGFRA", "PALB2", "NF2",
+    "NF1", "MSH6", "MSH2", "MLH1", "MET", "KIT", "HRAS", "FLCN", "FANCA", "EPCAM",
+    "EGFR", "CDKN2A", "CDK4", "CDK12", "BRCA2", "BRCA1", "BRAF", "BAP1", "ATR",
+    "ATM", "APC", "ALK"]
+
+	def var_info_stran(var):
+		var_info = ""
+		region_dict = {
+		"exon" : "外显子",
+		"intron" : "内含子",
+		"3'UTR" : "3'UTR",
+		"5'UTR" : "5'UTR",
+		"3'FLANKING" : "非编码区",
+		"5'FLANKING" : "非编码区"
+		}
+		if var["bio_category"] == "Cnv":
+			var_info = var["gene_symbol"]+"基因拷贝数扩增"
+		elif var["bio_category"] == "Sv":
+			var_info = var["five_prime_gene"]+"-"+var["three_prime_gene"]+"基因融合"
+		elif var["bio_category"] == "Snvindel":
+			if var["gene_symbol"] == "MET" and "exon14 skipping" in var["variant_interpret_cn"]:
+				if var["hgvs_p"] != "p.?":
+					var_info  = "MET基因14号外显子跳跃突变"+var["hgvs_p"]
+				else:
+					var_info = "MET基因14号外显子跳跃突变"+var["hgvs_c"]
+			else:
+				region_list_en = re.split("_", var["gene_region"])
+				region_list_cn = []
+				for i in region_list_en:
+					if re.search("exon", i):
+						region_list_cn.append(i.replace("exon", "")+"号外显子")
+					elif re.search("intron", i):
+						region_list_cn.append(i.replace("intron", "")+"号内含子")
+					else:
+						region_cn = region_dict[i] if i in region_dict.keys() else i
+						region_list_cn.append(region_cn)
+				if var["hgvs_p"] != "p.?":
+					var_info = var["gene_symbol"]+"基因"+"到".join(region_list_cn) + " " + var["hgvs_p"]+"突变"
+				else:
+					if var["type_cn"] != "--":
+						var_info = var["gene_symbol"]+"基因"+"到".join(region_list_cn) + " " + var["hgvs_c"]+"突变"
+					else:
+						var_info = var["gene_symbol"]+"基因"+"到".join(region_list_cn) + " " + var["hgvs_c"]+"突变"
+		return var_info
+
+	# I类 具有临床意义的基因变异
+	level_I_sum = [var_info_stran(var) for var in level_I] if level_I else []
+	result["level_I_sum"] = "；\n".join(level_I_sum) if level_I_sum else ""
+	# 非配对样本胚系变异
+	var_list = level_I + level_II + level_onco_nodrug
+	var_list = [var for var in var_list if var["gene_symbol"] in gene_list and var["bio_category"] == "Snvindel"] if var_list else []
+	var_list = sorted(var_list, key=lambda x: (x["clinic_num_g"], x["gene_symbol"]), reverse= True)
+	if not var_list:
+		result["nc_germline_sum"] = []
+	else:
+		nc_germline_sum = ["检出" + var_info_stran(var) + "，为致病性变异，待验证" if var["clinic_num_g"] == 5 else "检出" + var_info_stran(var) + "，为疑似致病性变异，待验证" for var in var_list]
+		result["nc_germline_sum"] = "；\n".join(nc_germline_sum) if nc_germline_sum else ""
+	# 配对样本胚系变异
+	germline_sum = ["检出" + var_info_stran(var) + "，为致病性变异" if var["clinic_num_g"] == 5 else "检出" + var_info_stran(var) + "，为疑似致病性变异" for var in level_5 + level_4] if level_5 + level_4 else []
+	result["germline_sum"] = "；\n".join(germline_sum) if germline_sum else ""
+
+	return result
+
+def getSum_for_gXW7601(var_list):
+	var = var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug']
+	main_gene = ['BRCA1', 'BRCA2']
+	hrr_genelist = ['AKT1', 'AR', 'ATM', 'ATR', 'BARD1', 'BRIP1', 'CDK12', 'CHEK1', 'CHEK2', 'FANCA', 'FANCL', 'HDAC2', 
+				 'MLH1', 'MRE11', 'NBN', 'PALB2', 'PIK3CA', 'PTEN', 'RAD51B', 'RAD51C', 'RAD51D', 'RAD54L']
+	result = XW6701_summary(var, main_gene, hrr_genelist)
+	return result
+
+def getSum_for_tXW7601(var_list, hd, tumor_list):
+	var = var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug'] + hd if \
+		"前列腺癌" in tumor_list else var_list['var_somatic']['level_I'] + var_list['var_somatic']['level_II'] + var_list['var_somatic']['level_onco_nodrug']
+	main_gene = ['BRCA1', 'BRCA2']
+	hrr_genelist = ['ATM', 'BARD1', 'BRIP1', 'CDK12', 'CHEK1', 'CHEK2', 'FANCA', 'FANCL', 'HDAC2', 'PALB2', 'PPP2R2A', 'RAD51B', 'RAD51C', 'RAD51D', 'RAD54L']
+	result = XW6701_summary(var, main_gene, hrr_genelist)
+	return result
