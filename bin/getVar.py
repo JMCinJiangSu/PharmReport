@@ -32,71 +32,7 @@ from libs.specialRequest import sort_for_xw0417
 from libs.specialRequest import getSum_for_tXW6002
 from libs.specialRequest import getSum_for_gXW6002
 from libs.specialRequest import getSum_for_XW5902
-from libs.specialRequest import var_ad3101_summary, getSum_for_tXW6701, getSum_for_gXW6701, getSum_for_XW6003
-
-'''
-Discription 
-	
-	获取json文件中的snvindel/cnv/sv/rna_sv和mlpa，转化为适用于大部分报告模板方便填充的格式（格式暂定如下）。等级拆分便于满足不同模板的填充需求
-	var : {
-		var_somatic_without_rnasv : {  为了满足报告模板中RNA SV和DNA SV一会儿合并，一会儿拆开展示的需求，这个是拆开的，包含DNA SV和DNA、RNA共检SV
-			level_I : [],  I类变异，最高治疗方案等级为A/B
-			level_II : [], II类变异，最高治疗方案等级为C/D
-			level_onco_nodrug : [], 无药，肿瘤发生发展变异
-			level_III : [], III类变异
-			},
-		var_rna_sv : {   为了满足报告模板中RNA SV和DNA SV一会儿合并，一会儿拆开展示的需求，这个是拆开的， 包含RNA SV和DNA、RNA共检SV
-			level_I : [],
-			level_II : [],
-			level_noco_nodrug : [],
-			level_III : []
-		},
-		var_somatic : {   为了满足报告模板中RNA SV和DNA SV一会儿合并，一会儿拆开展示的需求，这个是合并的
-			level_I : [],  I类变异，最高治疗方案等级为A/B
-			level_II : [], II类变异，最高治疗方案等级为C/D
-			level_onco_nodrug : [], 无药，肿瘤发生发展变异
-			level_III : [], III类变异	
-		},
-		var_germline : {
-			level_5 : [], 致病性变异
-			level_4 : [], 疑似致病性变异
-			level_3 : [], 意义不明变异
-			level_2 : [], 疑似良性变异（部分模板需要展示良性的结果，如HRR）
-			level_1 : [], 良性变异（部分模板需要展示良性的结果，如HRR）
-			regimen_level_I : [],
-			regimen_level_II : []
-		},
-		var_for_regimen_without_rnasv : { 胚系+体细胞存在治疗方案的变异, 包含DNA SV和DNA、RNA共检SV
-			level_I : [],
-			level_II : []
-		},
-		var_for_regimen : { 胚系+体细胞存在治疗方案的变异
-			level_I : [],
-			level_II : []
-		},
-		knb : {},
-		var_ec_type : { 适用于CP40、PTM、BPTM不同展示需求的报告模板
-			POLE_level12 : [], 适用于子宫内膜癌分子分型和变异结果分开展示的表格
-			POLE_level3 : [], 适用于子宫内膜癌分子分型和变异结果分开展示的表格
-			TP53_level12 : [], 适用于子宫内膜癌分子分型和变异结果分开展示的表格
-			TP53_level3 : [], 适用于子宫内膜癌分子分型和变异结果分开展示的表格
-			BRCA1_level12 : [], 适用于子宫内膜癌分子分型和变异结果分开展示的表格
-			BRCA1_level3 : [], 适用于子宫内膜癌分子分型和变异结果分开展示的表格
-			BRCA2_level12 : [], 适用于子宫内膜癌分子分型和变异结果分开展示的表格
-			BRCA2_level3 : []， 适用于子宫内膜癌分子分型和变异结果分开展示的表格
-			POLE_level12_withECtype : [], 适用于子宫内膜癌分子分型和变异结果合并展示的表格
-			POLE_level3_withECtype : [], 适用于子宫内膜癌分子分型和变异结果合并展示的表格
-			TP53_level12_withECtype : [], 适用于子宫内膜癌分子分型和变异结果合并展示的表格
-			TP53_level3_withECtype : [], 适用于子宫内膜癌分子分型和变异结果合并展示的表格
-			BRCA1_level12_withECtype : [], 适用于子宫内膜癌分子分型和变异结果合并展示的表格
-			BRCA1_level3_withECtype : [], 适用于子宫内膜癌分子分型和变异结果合并展示的表格
-			BRCA2_level12_withECtype : [], 适用于子宫内膜癌分子分型和变异结果合并展示的表格
-			BRCA2_level3_withECtype : []， 适用于子宫内膜癌分子分型和变异结果合并展示的表格
-		},
-		cdx : {}, 伴随诊断推荐基因检测结果，
-		summary_result : {} 检测结果汇总
-
-'''
+from libs.specialRequest import var_ad3101_summary, getSum_for_tXW6701, getSum_for_gXW6701, getSum_for_XW6003, getSum_for_XW6701, PAN116_LYZL_summary, getSum_for_gXW7601, getSum_for_tXW7601
 
 def getVar(jsonDict, config, report_name):
 	data = {}
@@ -321,9 +257,15 @@ def getVar(jsonDict, config, report_name):
 	data['special']['gXW6002'] = getSum_for_gXW6002(data["var_somatic"]["level_I"]+data["var_somatic"]["level_II"]+data["var_somatic"]["level_onco_nodrug"]+data["var_somatic"]["level_III"])
 	data['special']['xw5902'] = getSum_for_XW5902(data["var_somatic"]["level_I"]+data["var_somatic"]["level_II"]+data["var_somatic"]["level_onco_nodrug"]+data["var_somatic"]["level_III"], jsonDict['hd'])
 	data['special']['ad3101'] = var_ad3101_summary(data)
-	data['special']['tXW6701'] = getSum_for_tXW6701(data)
-	data['special']['gXW6701'] = getSum_for_gXW6701(data)
+	data['special']['tXW6701'] = getSum_for_tXW6701(data, jsonDict['hd'], jsonDict['sample_info']['tumor_list'])
+	data['special']['gXW6701'] = getSum_for_gXW6701(data, jsonDict['hd'], jsonDict['sample_info']['tumor_list'])
+	data['special']['XW6701'] = getSum_for_XW6701(data, jsonDict['hd'], jsonDict['sample_info']['tumor_list'])
 	data['special']['xw6003'] = getSum_for_XW6003(data, jsonDict['hd'])
+	data['special']['xw0294'] = getSum_for_tXW6002(data["var_somatic"]["level_I"]+data["var_somatic"]["level_II"]+data["var_somatic"]["level_onco_nodrug"])
+	data['special']['gXW7601'] = getSum_for_gXW7601(data)
+	data['special']['tXW7601'] = getSum_for_tXW7601(data, jsonDict['hd'], jsonDict['sample_info']['tumor_list'])
+	# 临沂肿瘤
+	data["special"]["LYZL_116"] = PAN116_LYZL_summary(data["var_somatic"]["level_I"], data["var_somatic"]["level_II"], data["var_somatic"]["level_onco_nodrug"], data["var_germline"]["level_5"], data["var_germline"]["level_4"])
 
 	# BCL2L11基因2号内含子胚系缺失多态性检测结果 
 	data["BCL2L11"] = ""
