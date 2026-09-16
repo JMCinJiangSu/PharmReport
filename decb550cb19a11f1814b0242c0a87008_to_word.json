@@ -1,0 +1,116 @@
+{
+    "var": {
+        "merge_order": [
+            {
+                "hgvs_c": "c.110del",
+                "hgvs_p": "p.G37Afs*14",
+                "gene_symbol": "ARID1A",
+                "group_key": "ARID1A+c.110del+p.G37Afs*14",
+                "73-25T05331": "20.51%",
+                "73-26S039533": "35.45%",
+                "freq_1": "20.51%",
+                "freq_2": "35.45%",
+                "count": 2
+            },
+            {
+                "hgvs_c": "c.3357+14C>T",
+                "hgvs_p": "p.?",
+                "gene_symbol": "PTCH2",
+                "group_key": "PTCH2+c.3357+14C>T+p.?",
+                "73-25T05331": "40.77%",
+                "73-26S039533": "33.94%",
+                "freq_1": "40.77%",
+                "freq_2": "33.94%",
+                "count": 2
+            },
+            {
+                "hgvs_c": "c.847C>T",
+                "hgvs_p": "p.R283*",
+                "gene_symbol": "APC",
+                "group_key": "APC+c.847C>T+p.R283*",
+                "73-25T05331": "11.36%",
+                "73-26S039533": "24.13%",
+                "freq_1": "11.36%",
+                "freq_2": "24.13%",
+                "count": 2
+            },
+            {
+                "hgvs_c": "c.3991A>T",
+                "hgvs_p": "p.R1331*",
+                "gene_symbol": "APC",
+                "group_key": "APC+c.3991A>T+p.R1331*",
+                "73-25T05331": "22.51%",
+                "73-26S039533": "40.84%",
+                "freq_1": "22.51%",
+                "freq_2": "40.84%",
+                "count": 2
+            },
+            {
+                "hgvs_c": "c.1173+7C>A",
+                "hgvs_p": "p.?",
+                "gene_symbol": "SMARCA2",
+                "group_key": "SMARCA2+c.1173+7C>A+p.?",
+                "73-25T05331": "47.59%",
+                "73-26S039533": "52.38%",
+                "freq_1": "47.59%",
+                "freq_2": "52.38%",
+                "count": 2
+            },
+            {
+                "hgvs_c": "c.35G>A",
+                "hgvs_p": "p.G12D",
+                "gene_symbol": "KRAS",
+                "group_key": "KRAS+c.35G>A+p.G12D",
+                "73-25T05331": "1.77%",
+                "73-26S039533": "",
+                "freq_1": "1.77%",
+                "freq_2": "",
+                "count": 2
+            },
+            {
+                "hgvs_c": "c.12329C>T",
+                "hgvs_p": "p.T4110I",
+                "gene_symbol": "KMT2D",
+                "group_key": "KMT2D+c.12329C>T+p.T4110I",
+                "73-25T05331": "47.41%",
+                "73-26S039533": "45.69%",
+                "freq_1": "47.41%",
+                "freq_2": "45.69%",
+                "count": 2
+            },
+            {
+                "hgvs_c": "c.817C>T",
+                "hgvs_p": "p.R273C",
+                "gene_symbol": "TP53",
+                "group_key": "TP53+c.817C>T+p.R273C",
+                "73-25T05331": "28.40%",
+                "73-26S039533": "61.24%",
+                "freq_1": "28.40%",
+                "freq_2": "61.24%",
+                "count": 2
+            },
+            {
+                "hgvs_c": "c.595-19C>G",
+                "hgvs_p": "p.?",
+                "gene_symbol": "ERCC2",
+                "group_key": "ERCC2+c.595-19C>G+p.?",
+                "73-25T05331": "58.55%",
+                "73-26S039533": "55.94%",
+                "freq_1": "58.55%",
+                "freq_2": "55.94%",
+                "count": 2
+            },
+            {
+                "hgvs_c": "c.10G>C",
+                "hgvs_p": "p.D4H",
+                "gene_symbol": "KEAP1",
+                "group_key": "KEAP1+c.10G>C+p.D4H",
+                "73-25T05331": "",
+                "73-26S039533": "5.32%",
+                "freq_1": "",
+                "freq_2": "5.32%",
+                "count": 2
+            }
+        ]
+    }
+}
